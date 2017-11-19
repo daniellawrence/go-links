@@ -1,17 +1,16 @@
 package main
 
 import (
+	"html/template"
 	"log"
 	"net/http"
-	"strings"
-	"html/template"
-	"path/filepath"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
-
 
 type GoLink struct {
 	gorm.Model
@@ -21,30 +20,25 @@ type GoLink struct {
 	ViewCount int
 }
 
-
 type PageContext struct {
-	GoLinks []GoLink
-	GoLink  GoLink
+	TopGoLinks []GoLink
+	GoLink     GoLink
 }
 
-
 var db *gorm.DB
-
 
 func (g GoLink) HTTPRedirect(w http.ResponseWriter, r *http.Request, args string) {
 	log.Printf("redirecting %#v", g)
 	http.Redirect(w, r, g.Target, 303)
 }
 
-
 func ParseInboundPath(p string) (name string, args string) {
 	path := strings.Replace(p, "%20", " ", -1)
 	pathSlice := strings.Split(path, " ")
 	name = strings.Trim(pathSlice[0], "/")
 	args = strings.Join(pathSlice[1:], " ")
-	return name, args	
+	return name, args
 }
-
 
 func route(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
@@ -80,7 +74,6 @@ func route(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-
 func serveTemplate(w http.ResponseWriter, r *http.Request, path string) {
 	lp := filepath.Join("templates", "layout.html")
 	fp := filepath.Join("templates", filepath.Clean(path))
@@ -109,10 +102,29 @@ func serveTemplate(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 
-	log.Printf("template OK: %v, %v", path, info)
-	tmpl.ExecuteTemplate(w, path, nil)
+	p := PageContext{
+		TopGoLinks: FetchTopGoLinks(20),
+	}
+
+	log.Printf("template OK: %v, %v", path)
+	err = tmpl.ExecuteTemplate(w, "layout", p)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	err = tmpl.ExecuteTemplate(w, "body", p)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
 }
 
+func FetchTopGoLinks(count int) (topGoLinks []GoLink) {
+	topGoLinks = []GoLink{}
+	db.Find(&topGoLinks).Limit(20)
+	return topGoLinks
+
+}
 
 func main() {
 	db, _ = gorm.Open("sqlite3", "/tmp/test.db")

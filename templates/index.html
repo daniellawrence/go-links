@@ -1,6 +1,16 @@
 {{template "layout"}}
-{{define "title"}}GO-LINKS{{end}}
+{{define "title"}}index{{end}}
 
 {{define "body"}}
 <h3>Top 20 go-links</h3>
+
+<pre>
+{{.}}
+</pre>
+
+<ul>
+  {{range .GoLinks}}
+  <li>x{{.}}y</li>
+  {{end}}
+</ul>
 {{end}}
