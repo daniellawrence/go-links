@@ -1,0 +1,45 @@
+* {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0px;
+}
+
+.header {
+    width: 100%;
+    height: 75px;
+    background-color: #1384ac;
+    padding: 20px;
+    text-align: center;
+}
+
+.header > .link {
+    text-decoration: none;
+    font-size: 2em;
+    color: #ffffff;
+    display: block;
+}
+
+.header > small {
+    color: #ffffff;
+}
+
+.container {
+    margin: 50px;
+    padding: 0px;
+
+}
+
+
+input, button {
+    height: 3em;
+    padding: 5px;
+}
+
+button {
+    background-color: #1384AC;
+    color: #ffffff;
+}

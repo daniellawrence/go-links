@@ -1,0 +1,29 @@
+{{define "layout"}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{template "title"}}</title>
+    <link rel="stylesheet" href="/static/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+
+    <div class="header">
+      <a class="link" href="">GO-LINKS</a>
+      <small>A short link service for internal use.</small>
+    </div>
+
+    
+    <div class="container">
+      <form class="new" method="post">
+        <input name="name" type="input" placeholder="Go Link">
+	<input name="target" type="input" placeholder="Target URL">
+	<button type="submit">Create</button>
+      </form>
+    </div>
+
+    {{template "body"}}
+  </body>
+</html>
+{{end}}
