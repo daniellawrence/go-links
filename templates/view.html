@@ -1,0 +1,30 @@
+{{template "layout"}}
+{{define "title"}}edit{{end}}
+
+{{define "body"}}
+<h1>Editing {{.GoLink.Name}}</h1>
+<table>
+  
+  <tr>
+    <th>n</th>
+    <th>v</th>
+  </tr>
+
+  <tr>
+    <td>id</td>
+    <td>{{.GoLink.ID}}</td>
+  </tr>
+
+  <tr>
+    <td>name</td>
+    <td>{{.GoLink.Name}}</td>
+  </tr>
+
+  <tr>
+    <td>target</td>
+    <td>{{.GoLink.Target}}</td>
+  </tr>
+
+</table>
+    
+{{end}}

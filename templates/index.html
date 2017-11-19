@@ -2,15 +2,14 @@
 {{define "title"}}index{{end}}
 
 {{define "body"}}
-<h3>Top 20 go-links</h3>
-
-<pre>
-{{.}}
-</pre>
-
+<h3>Top 20</h3>
 <ul>
-  {{range .GoLinks}}
-  <li>x{{.}}y</li>
+  {{range .TopGoLinks}}
+  <li>
+    <a href='/golink/{{.ID}}/edit/'>
+      {{.Name}} -> {{.Target}}
+    </a>
+  </li>
   {{end}}
 </ul>
 {{end}}

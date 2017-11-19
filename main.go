@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -32,6 +35,45 @@ func (g GoLink) HTTPRedirect(w http.ResponseWriter, r *http.Request, args string
 	http.Redirect(w, r, g.Target, 303)
 }
 
+func (g GoLink) HTTPRedirectToView(w http.ResponseWriter, r *http.Request) {
+	target := fmt.Sprintf("/golink/%d/", g.ID)
+	http.Redirect(w, r, target, 303)
+}
+
+func CreateNewGoLink(w http.ResponseWriter, r *http.Request) {
+	name := r.FormValue("name")
+	target := r.FormValue("target")
+	log.Printf("NEW: %s,%s\n", name, target)
+
+	g, _ := GoLinkFromName(name)
+
+	if g.Name == "" {
+		// If its a new record (no match), then create a new one.
+		g = GoLink{Owner: "dlawrenc", Name: name, Target: target}
+		db.NewRecord(g)
+		db.Create(&g)
+
+	} else {
+		// If its a found record, then update it
+		g.Name = name
+		g.Target = target
+		db.Save(&g)
+	}
+
+	g.HTTPRedirectToView(w, r)
+
+}
+
+func GoLinkFromName(name string) (g GoLink, err error) {
+	db.Where("name = ?", name).First(&g)
+	return g, nil
+}
+
+func GoLinkFromID(id int) (g GoLink, err error) {
+	db.Where("id = ?", id).First(&g)
+	return g, nil
+}
+
 func ParseInboundPath(p string) (name string, args string) {
 	path := strings.Replace(p, "%20", " ", -1)
 	pathSlice := strings.Split(path, " ")
@@ -44,12 +86,12 @@ func route(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	name, args := ParseInboundPath(path)
 
-	log.Printf("path: %v", path)
-	log.Printf("name=%s", name)
-	log.Printf("args=%s", args)
+	if path == "/new/" {
+		CreateNewGoLink(w, r)
+		return
+	}
 
-	g := GoLink{}
-	db.Where("name = ?", name).First(&g)
+	g, _ := GoLinkFromName(name)
 
 	// If the database look was sucessful, the redirect
 	if g.Name == name && name != "" {
@@ -59,7 +101,7 @@ func route(w http.ResponseWriter, r *http.Request) {
 
 	if path == "/" {
 		log.Print("index.html")
-		serveTemplate(w, r, "index.html")
+		serveTemplate(w, r, "index.html", g)
 		return
 	}
 
@@ -69,12 +111,39 @@ func route(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Print("missing")
-	serveTemplate(w, r, "missing.html")
+	viewRE := regexp.MustCompile("/golink/([0-9]+)/")
+	editRE := regexp.MustCompile("/golink/([0-9]+)/edit/")
+
+	viewResponse := viewRE.FindSubmatch([]byte(path))
+	if viewResponse == nil {
+		log.Printf("BAD")
+		return
+	}
+
+	idBig := new(big.Int)
+	idBig.SetString(string(viewResponse[1]), 2)
+	id := idBig.Sign()
+
+	if viewRE.MatchString(path) {
+		g, _ = GoLinkFromID(id)
+		log.Printf("view - %s - %d - %#v\n", path, id, g)
+		serveTemplate(w, r, "view.html", g)
+		return
+	}
+
+	if editRE.MatchString(path) {
+		g, _ = GoLinkFromID(id)
+		log.Printf("edit - %s - %d - %#v\n", path, id, g)
+		serveTemplate(w, r, "edit.html", g)
+		return
+	}
+
+	log.Print("index.html")
+	serveTemplate(w, r, "index.html", g)
 	return
 }
 
-func serveTemplate(w http.ResponseWriter, r *http.Request, path string) {
+func serveTemplate(w http.ResponseWriter, r *http.Request, path string, golink GoLink) {
 	lp := filepath.Join("templates", "layout.html")
 	fp := filepath.Join("templates", filepath.Clean(path))
 
@@ -104,6 +173,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request, path string) {
 
 	p := PageContext{
 		TopGoLinks: FetchTopGoLinks(20),
+		GoLink:     golink,
 	}
 
 	log.Printf("template OK: %v, %v", path)
@@ -121,7 +191,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request, path string) {
 
 func FetchTopGoLinks(count int) (topGoLinks []GoLink) {
 	topGoLinks = []GoLink{}
-	db.Find(&topGoLinks).Limit(20)
+	db.Find(&topGoLinks).Order("created_at").Limit(20)
 	return topGoLinks
 
 }

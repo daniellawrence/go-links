@@ -10,6 +10,11 @@ body {
     color: #ffffff;
 }
 
+a {
+    text-decoration: none;
+    color: #ffffff;
+}
+
 .header {
     width: 100%;
     height: 75px;
